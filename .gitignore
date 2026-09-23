@@ -1,0 +1,34 @@
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ipynb_checkpoints/
+
+# Data (large / raw datasets should not be committed)
+data/
+*.csv
+*.parquet
+*.zip
+*.gz
+
+# Environment / secrets
+.env
+*.env.local
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs and outputs
+*.log
+outputs/
+mlruns/
