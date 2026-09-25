@@ -31,4 +31,26 @@ Thumbs.db
 # Logs and outputs
 *.log
 outputs/
+checkpoints/
+
+# MLflow
 mlruns/
+mlartifacts/
+mlflow.db
+
+# Spark
+spark-warehouse/
+derby.log
+metastore_db/
+
+# Airflow
+airflow.cfg
+airflow.db
+unittests.cfg
+standalone_admin_password.txt
+logs/
+webserver_config.py
+
+# Docker
+docker/volumes/
+*.pid
