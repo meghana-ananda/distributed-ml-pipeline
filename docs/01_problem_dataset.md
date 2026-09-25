@@ -2,16 +2,16 @@
 
 ## Dataset: Avazu Click-Through Rate Prediction
 
-[Avazu CTR](https://www.kaggle.com/c/avazu-ctr-prediction) — **~40M rows**, 10 days of real mobile ad impression logs, ~1.5GB compressed / ~7GB uncompressed CSV, 24 categorical features (device, app, site, banner position, anonymized category IDs) plus a binary `click` label.
+I picked [Avazu CTR](https://www.kaggle.com/c/avazu-ctr-prediction) for this project: about 40M rows, 10 days of real mobile ad impression logs, roughly 1.5GB compressed / 7GB uncompressed as CSV, 24 categorical features (device, app, site, banner position, anonymized category IDs) plus a binary `click` label.
 
-**Why distributed processing, not pandas:**
-- 40M rows of high-cardinality categorical data (some fields have 100K+ unique values) blow past comfortable single-machine RAM once one-hot/hash encoding and joins are applied — pandas either swaps to disk or OOMs on a typical 16GB dev laptop.
-- The workload is embarrassingly parallel (row-independent feature engineering, groupby aggregations per device/app/site), which is exactly the shape distributed engines (Spark / Dask) are built to exploit — it's a realistic testbed for partitioning strategy, shuffle cost, and cluster-scaling tradeoffs, not just a toy dataset forced into a big-data tool.
-- Time-based train/test split across 10 days mirrors production streaming ingestion, motivating a pipeline (not a one-off notebook) that can reprocess new daily partitions incrementally.
+**Why I'm processing this with a distributed pipeline instead of pandas:**
+- 40M rows of high cardinality categorical data (some fields have 100K+ unique values) blow past comfortable single machine RAM once I apply one-hot/hash encoding and joins. Pandas either swaps to disk or OOMs on a typical 16GB dev laptop at this scale.
+- The workload is embarrassingly parallel (row-independent feature engineering, groupby aggregations per device/app/site), which is exactly the shape distributed engines like Spark are built to exploit. I wanted a realistic testbed for partitioning strategy, shuffle cost, and cluster scaling tradeoffs, not a toy dataset forced into a big data tool just to check a box.
+- The 10 day span lets me do a time based train/test split that mirrors production streaming ingestion, which is why I'm building this as a pipeline that can reprocess new daily partitions incrementally, not a one off notebook.
 
 ## Prediction Task
 
-**Task:** Binary classification — predict whether a mobile ad impression will be clicked.
+**Task:** Binary classification. I'm predicting whether a mobile ad impression will be clicked.
 
 **Input (single row):**
 ```
@@ -21,18 +21,18 @@ device_type=1, device_conn_type=0, C14=15706, C17=1722, ...
 
 **Output:**
 ```
-click_probability = 0.037   →  predicted_label = 0 (no click)
+click_probability = 0.037   ->  predicted_label = 0 (no click)
 ```
 
-Model output is a calibrated probability used downstream for ad-ranking/bid decisions, not just a hard label.
+I'm treating the model output as a calibrated probability used downstream for ad ranking/bid decisions, not just a hard label.
 
 ## Success Metrics
 
 **Model quality:**
-- Primary: **Log Loss** (competition metric; CTR is heavily imbalanced, so accuracy is misleading)
-- Secondary: **AUC-ROC**, to sanity-check ranking quality independent of calibration
+- Primary: **Log Loss** (this is the original competition metric, and CTR is heavily imbalanced, so accuracy alone would be misleading)
+- Secondary: **AUC-ROC**, to sanity check ranking quality independent of calibration
 
-**Pipeline performance** (the portfolio's actual focus):
-- **Throughput:** rows/sec processed during distributed feature engineering (target: sustain >100K rows/sec on a small cluster/local multi-worker setup)
-- **End-to-end runtime:** raw CSV → engineered features → trained model, measured wall-clock, tracked across cluster sizes (1 vs 4 vs 8 workers) to demonstrate scaling
-- **Resource ceiling:** peak memory per worker, to show the pipeline stays within a fixed, modest budget regardless of dataset size — the point pandas alone can't guarantee here
+**Pipeline performance** (this is the actual focus of the portfolio piece):
+- **Throughput:** rows/sec processed during distributed feature engineering. I'm targeting sustained throughput above 100K rows/sec on a small cluster/local multi-worker setup.
+- **End-to-end runtime:** raw CSV through engineered features to trained model, measured wall clock, tracked across cluster sizes (1 vs 4 vs 8 workers) so I can demonstrate scaling.
+- **Resource ceiling:** peak memory per worker, to show the pipeline stays within a fixed, modest budget regardless of dataset size. This is the constraint pandas alone can't guarantee, and it's the core reason I built this as a distributed pipeline.
